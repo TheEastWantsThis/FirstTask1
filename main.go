@@ -2,26 +2,30 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gorilla/mux"
 	"net/http"
 )
 
-var task string
-
-type RequestBody struct {
-	Task string `json:"task"`
-}
-
 func TaskHandler(w http.ResponseWriter, r *http.Request) {
-	var req RequestBody
+	var req Task
 	json.NewDecoder(r.Body).Decode(&req)
-	task = req.Task
+	DB.Create(&req)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(req)
+
 }
+
 func HelloHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Hello, ", task)
+	var tasks []Task
+	DB.Find(&tasks)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tasks)
 }
+
 func main() {
+	InitDB()
+	DB.AutoMigrate(&Task{})
+
 	router := mux.NewRouter()
 	router.HandleFunc("/api/hello", HelloHandler).Methods("GET")
 	router.HandleFunc("/api/task", TaskHandler).Methods("POST")
